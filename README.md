@@ -26,7 +26,7 @@ tar -xf waymo_x.tar.gz
 ### 📂 Esturura de diretórios e arquivos:
 
 ```
-~/astro/data/lidar_sweep_viewer/
+/path/to/data/
 
 ├── waymo_x/
 |   ├── bin_files/           # Contém arquivos binários (.bin) com dados LiDAR
@@ -83,7 +83,7 @@ Esses dados são transformados conforme a pose e renderizados sobre a imagem bir
 Para visualizar os dados basta executar os seguintes comandos:
 
 ```
-cd ~/astro/src/lidar_sweep_viewer
+cd /path/to/repo/lidar_sweep_viewer
 make
 ./show_point_cloud --input /path/to/data/lidar_sweep_viewer/waymo_1000/ -v 100 (velocidade em ms, vocẽ deve aumentar para poucos dados. Padrão é 1)
 ```
