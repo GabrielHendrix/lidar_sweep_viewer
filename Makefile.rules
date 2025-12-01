@@ -1,0 +1,563 @@
+YELLOW_COLOR=\033[1;33m
+LIGHT_CYAN_COLOR=\033[1;36m
+NO_COLOR=\033[0m
+
+# Clean up commit_hash.txt if it exists
+clean_commit_hash:
+	@if [ -f $(CURDIR)/commit_hash.txt ]; then \
+		echo "    ---- Removing existing commit_hash.txt in $(CURDIR)" ; \
+		rm $(CURDIR)/commit_hash.txt; \
+	fi
+
+# Generate commit_hash.txt after successful build
+generate_commit_hash:
+	@echo "    ---- Generating commit hash file in $(CURDIR)"
+	@git rev-parse HEAD > $(CURDIR)/commit_hash.txt
+
+banner = $(SILENT) \
+	echo ; \
+	echo "****************************************************************" ; \
+	echo "* Module  : "$(MODULE_NAME) ; \
+	echo "* Path    : "`pwd` ; \
+	echo "* Comment : "$(MODULE_COMMENT) ; \
+	echo "****************************************************************" ; \
+
+subdir_recurse = $(SILENT) \
+	for i in $(SUBDIRS) xxxx ; do \
+		if [ -d $$i ] ; then \
+			if ! $(MAKE) -C $$i $@ ; then \
+                                exit 1; \
+                        fi; \
+		fi \
+	done
+
+ifneq ($(strip $(ASTRO_COPY_OR_LINK_BIN_LIB_INC)), copy)
+
+install_includes = $(SILENT) \
+	export dir=`pwd` ; \
+	for i in $(PUBLIC_INCLUDES); do \
+		if (test -f "$$i" && ([ ! -e "$(INC_DIR)/astro/$$i" ] || (! [ -L "$(INC_DIR)/astro/$$i" ] && [ "$$(readlink -f $(INC_DIR)/astro/$$i)" != "$$dir/$$i" ]))); then \
+			echo "    ---- Symlinking $$i to $(INC_DIR)/astro" ; \
+			$(RM) -f $(INC_DIR)/astro/$$i ; \
+			$(LN) $$dir/$$i $(INC_DIR)/astro/$$i ; \
+		fi; \
+	done
+
+install_libraries = $(SILENT) \
+	export dir=`pwd` ; \
+	for i in $(PUBLIC_LIBRARIES); do \
+		if (test -f "$$i" && ([ ! -e "$(LIB_DIR)/$$i" ] || (! [ -L "$(LIB_DIR)/$$i" ] && [ "$$(readlink -f $(LIB_DIR)/$$i)" != "$$dir/$$i" ]))) ; then \
+			echo "    ---- Symlinking $$i to $(LIB_DIR)" ; \
+			$(RM) -f $(LIB_DIR)/$$i ; \
+			$(LN) $$dir/$$i $(LIB_DIR)/$$i ; \
+		fi; \
+	done
+
+install_libraries_so = \
+	export dir=`pwd` ; \
+	for i in $(PUBLIC_LIBRARIES_SO); do \
+		if (test -f "$$i" && ([ ! -e "$(SHARED_DIR)/$$i" ] || (! [ -L "$(SHARED_DIR)/$$i" ] && [ "$$(readlink -f $(SHARED_DIR)/$$i)" != "$$dir/$$i" ]))); then \
+			echo "    ---- Symlinking $$i to $(SHARED_DIR)" ; \
+			$(RM) -f $(SHARED_DIR)/$$i ; \
+			$(LN) $$dir/$$i $(SHARED_DIR)/$$i ; \
+		fi; \
+	done
+
+install_binaries = $(SILENT) \
+	export dir=`pwd` ; \
+	for i in $(PUBLIC_BINARIES); do \
+		if (test -f "$$i" && ([ ! -e "$(BIN_DIR)/$$i" ] || (! [ -L "$(BIN_DIR)/$$i" ] && [ "$$(readlink -f $(BIN_DIR)/$$i)" != "$$dir/$$i" ]))); then \
+			echo "    ---- Symlinking $$i to $(BIN_DIR)" ; \
+			$(RM) -f $(BIN_DIR)/$$i ; \
+			$(LN) $$dir/$$i $(BIN_DIR)/$$i ; \
+		fi; \
+	done
+
+install_manpages = $(SILENT) \
+	export dir=`pwd` ; \
+	for i in $(MAN_PAGES); do \
+		if (test -f "$$i" && ([ ! -e "$(MAN_DIR)/$$i" ] || (! [ -L "$(MAN_DIR)/$$i" ] && [ "$$(readlink -f $(MAN_DIR)/$$i)" != "$$dir/$$i" ]))); then \
+			echo "    ---- Symlinking $$i to $(MAN_DIR)" ; \
+			$(RM) -f $(MAN_DIR)/$$i ; \
+			$(LN) $$dir/$$i $(MAN_DIR)/$$i ; \
+		fi; \
+	done
+
+install_others = $(SILENT) \
+	export dir=`pwd` ; \
+	for i in $(PUBLIC_OTHERS); do \
+		if (test -f "$$i" && ([ ! -e "$(BIN_DIR)/$$i" ] || (! [ -L "$(BIN_DIR)/$$i" ] && [ "$$(readlink -f $(BIN_DIR)/$$i)" != "$$dir/$$i" ]))); then \
+			echo "    ---- Symlinking $$i to $(BIN_DIR)" ; \
+			$(RM) -f $(BIN_DIR)/$$i ; \
+			$(LN) $$dir/$$i $(BIN_DIR)/$$i ; \
+		fi; \
+	done
+
+else
+
+install_includes = $(SILENT) \
+	export dir=`pwd` ; \
+	for i in $(PUBLIC_INCLUDES); do \
+		if (test -f "$$i" && ([ ! -e "$(INC_DIR)/astro/$$i" ] || [ -L "$(INC_DIR)/astro/$$i" ] || ! $(NEWER) $(INC_DIR)/astro/$$i $$i)) ; then \
+			echo "    ---- Copying $$i to $(INC_DIR)/astro" ; \
+			$(RM) -f $(INC_DIR)/astro/$$i ; \
+			$(CP) --preserve=all $$dir/$$i $(INC_DIR)/astro/$$i ; \
+		fi; \
+	done
+
+install_libraries = $(SILENT) \
+	export dir=`pwd` ; \
+	for i in $(PUBLIC_LIBRARIES); do \
+		if	(test -f "$$i" && ([ ! -e "$(LIB_DIR)/$$i" ] || [ -L "$(LIB_DIR)/$$i" ] || ! $(NEWER) $(LIB_DIR)/$$i $$i)) ; then \
+			echo "    ---- Copying $$i to $(LIB_DIR)" ; \
+			$(RM) -f $(LIB_DIR)/$$i ; \
+			$(CP) --preserve=all $$dir/$$i $(LIB_DIR)/$$i ; \
+		fi; \
+	done
+
+install_libraries_so = \
+	export dir=`pwd` ; \
+	for i in $(PUBLIC_LIBRARIES_SO); do \
+		if	(test -f "$$i" && ([ ! -e "$(SHARED_DIR)/$$i" ] || [ -L "$(SHARED_DIR)/$$i" ] || ! $(NEWER) $(SHARED_DIR)/$$i $$i)) ; then \
+			echo "    ---- Copying $$i to $(SHARED_DIR)" ; \
+			$(RM) -f $(SHARED_DIR)/$$i ; \
+			$(CP) --preserve=all $$dir/$$i $(SHARED_DIR)/$$i ; \
+		fi; \
+	done
+
+install_binaries = $(SILENT) \
+	export dir=`pwd` ; \
+	for i in $(PUBLIC_BINARIES); do \
+		if	(test -f "$$i" && ([ ! -e "$(BIN_DIR)/$$i" ] || [ -L "$(BIN_DIR)/$$i" ] || ! $(NEWER) $(BIN_DIR)/$$i $$i)) ; then \
+			echo "    ---- Copying $$i to $(BIN_DIR)" ; \
+			$(RM) -f $(BIN_DIR)/$$i ; \
+			$(CP) --preserve=all $$dir/$$i $(BIN_DIR)/$$i ; \
+		fi; \
+	done
+
+install_manpages = $(SILENT) \
+	export dir=`pwd` ; \
+	for i in $(MAN_PAGES); do \
+		if	(test -f "$$i" && ([ ! -e "$(MAN_DIR)/$$i" ] || [ -L "$(MAN_DIR)/$$i" ] || ! $(NEWER) $(MAN_DIR)/$$i $$i)) ; then \
+			echo "    ---- Copying $$i to $(MAN_DIR)" ; \
+			$(RM) -f $(MAN_DIR)/$$i ; \
+			$(CP) --preserve=all $$dir/$$i $(MAN_DIR)/$$i ; \
+		fi; \
+	done
+
+install_others = $(SILENT) \
+	export dir=`pwd` ; \
+	for i in $(PUBLIC_OTHERS); do \
+		if	(test -f "$$i" && ([ ! -e "$(BIN_DIR)/$$i" ] || [ -L "$(BIN_DIR)/$$i" ] || ! $(NEWER) $(BIN_DIR)/$$i $$i)) ; then \
+			echo "    ---- Copying $$i to $(BIN_DIR)" ; \
+			$(RM) -f $(BIN_DIR)/$$i ; \
+			$(CP) --preserve=all $$dir/$$i $(BIN_DIR)/$$i ; \
+		fi; \
+	done
+
+endif
+
+install_glades = $(SILENT) \
+	for i in $(GLADE_FILES) xxxx ; do \
+		if test -f $$i && ! $(NEWER) $(GLADE_DIR)/$$i $$i ; then \
+			echo "    ---- Copying $$i to $(GLADE_DIR)" ; \
+			export dir=`pwd` ; \
+			$(RM) -f $(GLADE_DIR)/$$i ; \
+			$(CP) $$dir/$$i $(GLADE_DIR)/$$i ; \
+		fi; \
+	done 
+	
+compile_mae = $(SILENT) \
+	for i in $(MAE_FILES) xxxx ; do \
+		if test -f $$i; then \
+			output=`echo $$i | cut -d'.' -f 1`; \
+			echo "---- Compiling $$i to $$output.c ("mae")"; \
+			$(MAEHOME)/bin/netcomp -o $$output < $$i; \
+		fi; \
+	done
+
+clean_mae = $(SILENT) \
+        for i in $(MAE_FILES) xxxx ; do \
+                if test -f $$i; then \
+                        output=`echo $$i | cut -d'.' -f 1`; \
+                        echo "---- Cleaning $$output MAE generated files ("mae")"; \
+                        rm -rf $$output.c ; \
+			rm -rf $$output.h ; \
+                fi; \
+        done
+
+global_install_includes = $(SILENT) \
+	for i in $(PUBLIC_INCLUDES) xxxx ; do \
+		if test -f $$i && \
+		   ! $(NEWER) $(GLOBAL_INC_DIR)/astro/$$i $$i ; then \
+			echo \
+			 "    ---- Copying $$i to $(GLOBAL_INC_DIR)/astro" ; \
+			export dir=`pwd` ; \
+			$(RM) -f $(GLOBAL_INC_DIR)/astro/$$i ; \
+			$(CP) $$dir/$$i $(GLOBAL_INC_DIR)/astro/$$i ; \
+		fi; \
+	done 
+
+global_install_libraries = $(SILENT) \
+	for i in $(PUBLIC_LIBRARIES) xxxx ; do \
+		if test -f $$i && ! $(NEWER) $(GLOBAL_LIB_DIR)/$$i $$i ; then \
+			echo "    ---- Copying $$i to $(GLOBAL_LIB_DIR)" ; \
+			export dir=`pwd` ; \
+			$(RM) -f $(GLOBAL_LIB_DIR)/$$i ; \
+			$(CP) $$dir/$$i $(GLOBAL_LIB_DIR)/$$i ; \
+		fi; \
+	done 
+
+global_install_libraries_so = $(SILENT) \
+	for i in $(PUBLIC_LIBRARIES_SO) xxxx ; do \
+		if test -f $$i && ! $(NEWER) $(GLOBAL_SHARED_DIR)/$$i $$i ; then \
+			echo "    ---- Copying $$i to $(GLOBAL_SHARED_DIR)" ; \
+			export dir=`pwd` ; \
+			$(RM) -f $(GLOBAL_SHARED_DIR)/$$i ; \
+			$(CP) $$dir/$$i $(GLOBAL_SHARED_DIR)/$$i ; \
+		fi; \
+	done 
+
+global_install_binaries = $(SILENT) \
+	for i in $(PUBLIC_BINARIES) $(PUBLIC_OTHERS) xxxx ; do \
+		if test -f $$i && ! $(NEWER) $(GLOBAL_BIN_DIR)/$$i $$i ; then \
+			echo "    ---- Copying $$i to $(GLOBAL_BIN_DIR)" ; \
+			export dir=`pwd` ; \
+			$(RM) -f $(GLOBAL_BIN_DIR)/$$i ; \
+			$(CP) $$dir/$$i $(GLOBAL_BIN_DIR)/$$i ; \
+		fi; \
+	done 
+
+global_install_manpages = $(SILENT) \
+	for i in $(MAN_PAGES) xxxx ; do \
+		if test -f $$i && ! $(NEWER) $(GLOBAL_MAN_DIR)/$$i $$i ; then \
+			echo "    ---- Copying $$i to $(GLOBAL_MAN_DIR)" ; \
+			export dir=`pwd` ; \
+			$(RM) -f $(GLOBAL_MAN_DIR)/$$i ; \
+			$(CP) $$dir/$$i $(GLOBAL_MAN_DIR)/$$i ; \
+		fi; \
+	done
+
+remove_includes = $(SILENT) \
+	for i in $(PUBLIC_INCLUDES) xxxx ; do \
+		if test ! "$$i" = "xxxx" ; then \
+			echo "    ---- Removing $$i from $(INC_DIR)/astro" ; \
+			$(RM) -f $(INC_DIR)/astro/$$i ; \
+		fi ; \
+	done 
+
+remove_libraries = $(SILENT) \
+	for i in $(PUBLIC_LIBRARIES) xxxx ; do \
+		if test ! "$$i" = "xxxx" ; then \
+			echo "    ---- Removing $$i from $(LIB_DIR)" ; \
+			$(RM) -f $(LIB_DIR)/$$i ; \
+		fi ; \
+	done 
+
+remove_libraries_so = $(SILENT) \
+	for i in $(PUBLIC_LIBRARIES_SO) xxxx ; do \
+		if test ! "$$i" = "xxxx" ; then \
+			echo "    ---- Removing $$i from $(SHARED_DIR)" ; \
+			$(RM) -f $(SHARED_DIR)/$$i ; \
+		fi ; \
+	done 
+
+remove_binaries = $(SILENT) \
+	for i in $(PUBLIC_BINARIES) $(PUBLIC_OTHERS) xxxx ; do \
+		if test ! "$$i" = "xxxx" ; then \
+			echo "    ---- Removing $$i from $(BIN_DIR)" ; \
+			$(RM) -f $(BIN_DIR)/$$i ; \
+		fi ; \
+	done 
+
+remove_manpages = $(SILENT) \
+	for i in $(MAN_PAGES) xxxx ; do \
+		if test ! "$$i" = "xxxx" ; then \
+			echo "    ---- Removing $$i from $(MAN_DIR)" ; \
+			$(RM) -f $(MAN_DIR)/$$i ; \
+		fi ; \
+	done
+
+global_remove_includes = $(SILENT) \
+	for i in $(PUBLIC_INCLUDES) xxxx ; do \
+		if test ! "$$i" = "xxxx" ; then \
+			echo "    ---- Removing $$i from $(GLOBAL_INC_DIR)/astro" ; \
+			$(RM) -f $(GLOBAL_INC_DIR)/astro/$$i ; \
+		fi ; \
+	done 
+
+global_remove_libraries = $(SILENT) \
+	for i in $(PUBLIC_LIBRARIES) xxxx ; do \
+		if test ! "$$i" = "xxxx" ; then \
+			echo "    ---- Removing $$i from $(GLOBAL_LIB_DIR)" ; \
+			$(RM) -f $(GLOBAL_LIB_DIR)/$$i ; \
+		fi ; \
+	done 
+
+global_remove_libraries_so = $(SILENT) \
+	for i in $(PUBLIC_LIBRARIES_SO) xxxx ; do \
+		if test ! "$$i" = "xxxx" ; then \
+			echo "    ---- Removing $$i from $(GLOBAL_SHARED_DIR)" ; \
+			$(RM) -f $(GLOBAL_SHARED_DIR)/$$i ; \
+		fi ; \
+	done 
+
+global_remove_binaries = $(SILENT) \
+	for i in $(PUBLIC_BINARIES) $(PUBLIC_OTHERS) xxxx ; do \
+		if test ! "$$i" = "xxxx" ; then \
+			echo "    ---- Removing $$i from $(GLOBAL_BIN_DIR)" ; \
+			$(RM) -f $(GLOBAL_BIN_DIR)/$$i ; \
+		fi ; \
+	done 
+
+global_remove_manpages = $(SILENT) \
+	for i in $(MAN_PAGES) xxxx ; do \
+		if test ! "$$i" = "xxxx" ; then \
+			echo "    ---- Removing $$i from $(GLOBAL_MAN_DIR)" ; \
+			$(RM) -f $(GLOBAL_MAN_DIR)/$$i ; \
+		fi ; \
+	done
+
+libraries:
+	$(SILENT) for i in $(filter %.a, $(TARGETS)) $(filter %.so, $(TARGETS)) xxxx ; do \
+		if test ! "$$i" = "xxxx" ; then \
+			if ! $(MAKE) $$i ; then \
+                                exit 1; \
+                        fi; \
+		fi ; \
+	done 
+
+binaries:
+	$(SILENT) for i in $(filter-out %.a, $(TARGETS)) xxxx ; do \
+		if test ! "$$i" = "xxxx" ; then \
+			if ! $(MAKE) $$i ; then \
+                                exit 1; \
+                        fi; \
+		fi ; \
+	done 
+
+phase1: clean_commit_hash
+	$(subdir_recurse)
+	$(banner)
+	$(ECHO) ""
+	(>&2 echo "${YELLOW_COLOR}  --> Starting make phase1 -C "`pwd`"${NO_COLOR}")
+	$(compile_mae)
+	$(install_includes)
+	$(install_manpages)
+	$(install_others)
+ifdef ASTRO_TEST
+ifneq (Makefile.depend, $(wildcard Makefile.depend))
+	$(SILENT) $(MAKE) depend  2>> error.out
+endif
+	$(SILENT) $(MAKE) libraries  2>> error.out
+else
+ifneq (Makefile.depend, $(wildcard Makefile.depend))
+	$(SILENT) $(MAKE) depend
+endif
+	$(SILENT) $(MAKE) libraries
+endif
+	$(install_libraries)
+	$(install_libraries_so)
+	(>&2 echo "${LIGHT_CYAN_COLOR}  <-- Finished make phase1 -C : "`pwd`"${NO_COLOR}")
+
+phase2:
+	$(subdir_recurse)
+	$(banner)
+	$(ECHO) ""
+	(>&2 echo "${YELLOW_COLOR}  --> Starting make phase2 -C "`pwd`"${NO_COLOR}")
+ifdef ASTRO_TEST
+	$(SILENT) $(MAKE) binaries 2>> error.out
+else
+	$(SILENT) $(MAKE) binaries
+endif
+	$(install_binaries)
+	$(install_glades)
+	(>&2 echo "${LIGHT_CYAN_COLOR}  <-- Finished make phase2 -C "`pwd`"${NO_COLOR}")
+	$(MAKE) generate_commit_hash
+
+phase3:
+	$(subdir_recurse)
+	$(install_libraries_so)
+
+phase4:
+	$(subdir_recurse)
+
+all: clean_commit_hash
+	$(subdir_recurse)
+	$(banner)
+	$(ECHO) ""
+	(>&2 echo "${YELLOW_COLOR}  --> Starting make all -C "`pwd`"${NO_COLOR}")
+	$(compile_mae)
+	$(install_includes)
+	$(install_manpages)
+	$(install_others)
+ifdef ASTRO_TEST
+ifneq (Makefile.depend, $(wildcard Makefile.depend))
+	$(SILENT) $(MAKE) depend 2>> error.out
+endif
+	$(SILENT) $(MAKE) libraries 2>> error.out
+else
+ifneq (Makefile.depend, $(wildcard Makefile.depend))
+	$(SILENT) $(MAKE) depend
+endif
+	$(SILENT) $(MAKE) libraries
+endif
+	$(install_libraries)
+	$(install_libraries_so)
+ifdef ASTRO_TEST
+	$(SILENT) $(MAKE) binaries 2>> error.out 
+else
+	$(SILENT) $(MAKE) binaries
+endif
+	$(install_binaries)
+	$(install_glades)
+	(>&2 echo "${LIGHT_CYAN_COLOR}  <-- Finished make all -C "`pwd`"${NO_COLOR}")
+	$(MAKE) generate_commit_hash
+
+install:
+	$(subdir_recurse)
+	$(banner)
+	$(global_install_includes)
+	$(global_install_libraries)
+	$(global_install_libraries_so)
+	$(global_install_binaries)
+	$(global_install_manpages)
+
+uninstall:
+	$(subdir_recurse)
+	$(banner)
+	$(global_remove_includes)
+	$(global_remove_libraries)
+	$(global_remove_libraries_so)
+	$(global_remove_binaries)
+	$(global_remove_manpages)
+
+clean: clean_commit_hash
+	$(clean_mae)
+	$(subdir_recurse)
+	$(remove_includes)
+	$(remove_libraries)
+	$(remove_libraries_so)
+	$(remove_binaries)
+	$(ECHO) "    ---- Cleaning up "$(MODULE_NAME)
+	$(SILENT) $(RM) *.o *.a *.so *.exe core a.out error.out Makefile.depend Makefile.depend.bak $(TARGETS) $(patsubst %.class,'%.class',$(CLASS_FILES))
+
+erase: clean_commit_hash
+	$(subdir_recurse)
+	$(remove_includes)
+	$(remove_libraries)
+	$(remove_libraries_so)
+	$(remove_binaries)
+
+relink:
+	$(subdir_recurse)
+	$(SILENT) $(RM) $(filter-out %.a, $(TARGETS))
+	$(SILENT) for i in $(filter-out %.a, $(TARGETS)) ; do \
+		$(MAKE) $$i ; \
+	done
+
+distclean: clean_commit_hash
+	$(clean_mae)
+	$(subdir_recurse)
+	$(ECHO) "    ---- Cleaning up "$(MODULE_NAME)
+	$(SILENT) $(RM) *.o *.a *.so *.exe *~ core a.out error.out
+	$(SILENT) $(RM) Makefile.depend Makefile.depend.bak $(TARGETS) $(patsubst %.class,'%.class',$(CLASS_FILES))
+	$(remove_includes)
+	$(remove_libraries)
+	$(remove_libraries_so)
+	$(remove_binaries)
+	$(remove_manpages)
+	$(RM) core gmon.out *~ .\#* \#*
+
+export:
+	$(subdir_recurse)
+	$(install_includes)
+	$(install_others)
+
+dep depend:
+	$(subdir_recurse)
+	$(ECHO) "    ---- Assigning dependencies in "$(MODULE_NAME)
+	$(SILENT) $(TOUCH) Makefile.depend
+	$(SILENT) if test ! "$(SOURCES)x" = x ; then \
+		$(CC) -M $(SOURCES) $(IFLAGS) $(filter -D%, $(CFLAGS)) > Makefile.depend ; \
+	fi
+	$(SILENT) $(RM) Makefile.depend.bak
+
+debug:
+	$(SILENT) $(MAKE) ASTRO_DEBUG=1 all
+checkup:
+	$(ECHO) "------ result of "$(MODULE_NAME)
+	$(ASTRO_HOME)/src/checkup.sh $(MODULE_NAME)
+loud:
+	$(SILENT) $(MAKE) MAKEFLAGS= LOUD=1 all
+git:
+	$(ECHO) " --- Simulating make in tracked files only" $(MODULE_NAME)
+	# create temp dir (must be a real command, not echoed)
+	mkdir -p $(ASTRO_HOME)/src/maketest_temp_build/
+	# copy only tracked files
+	git ls-files -z | rsync -a --delete -0 --files-from=- . $(ASTRO_HOME)/src/maketest_temp_build/
+	# run make inside the temp dir (uppercase -C)
+	$(MAKE) -C $(ASTRO_HOME)/src/maketest_temp_build/
+	$(ECHO) "******** removing maketest_temp_build"
+	$(RM) $(ASTRO_HOME)/src/maketest_temp_build
+
+# This isn't the rule that adds a directory to the tar ball.
+# That happens in the top-level tar rule using recursion.
+# All this does is remove the unwanted CVS and .cvsignore files.
+
+tar-clean:
+	$(subdir_recurse)
+	$(ECHO) "  Adding "$(MODULE_NAME)"..."
+	dir=$${PWD/#*astro/}; \
+	cd $(ASTRO_HOME)/..; \
+	tar --delete -f $(ASTRO_HOME)/../astro.tar astro$$dir/CVS ; \
+	if [ -f astro/$$dir/.cvsignore ] ; then \
+		tar --delete -f $(ASTRO_HOME)/../astro.tar \
+		astro$$dir/.cvsignore ; \
+	fi 
+
+.SUFFIXES: .c .o .a .so .C
+
+.PHONY:	   all clean dep debug git 
+
+%.o:	%.cu
+	$(ECHO) "    ---- Compiling $< to $@ ("$(NVCC)")"
+	$(SILENT) $(NVCC) $(CUDAFLAGS) -c $< -o $@
+
+%.o:	%.c
+	$(ECHO) "    ---- Compiling $< to $@ ("$(CC)")"
+	$(SILENT) $(CC) $(CFLAGS) $(IFLAGS) -c $< -o $@
+
+%.a:	
+	$(ECHO) "    ---- Archiving $^ into $@ ("$(AR)")"
+	$(SILENT) $(AR) $@ $^
+	$(SILENT) $(RANLIB) $@
+
+%.o:	%.C
+	$(ECHO) "    ---- Compiling $< to $@ ("$(CXX)")"
+	$(SILENT) $(CXX) $(CXXFLAGS) $(IFLAGS) -c $< -o $@
+
+%.o:	%.cpp
+	$(ECHO) "    ---- Compiling $< to $@ ("$(CXX)")"
+	$(SILENT) $(CXX) $(CXXFLAGS) $(IFLAGS) -c $< -o $@
+
+%.o:	%.cc
+	$(ECHO) "    ---- Compiling $< to $@ ("$(CXX)")"
+	$(SILENT) $(CXX) $(CXXFLAGS) $(IFLAGS) -c $< -o $@
+
+%.so:	
+	$(ECHO) "    ---- Archiving $^ into $@ ("$(CXX)")"
+	$(SILENT) $(CXX) -shared -o $@ $^ $(LFLAGS)
+
+%.doxygen:	
+	$(ECHO) "    ---- Compiling $< (Doxygen)"
+	$(SILENT) $(DOXYGEN) $<
+
+%:	
+	$(ECHO) "    ---- Linking $^ to $@ ("$(LINK)")"
+	$(SILENT) $(LINK) $(filter-out $(FOUTC), $(CFLAGS)) $(IFLAGS) $(filter %.o, $^) $(filter %.a, $^) -o $@ -L. $(patsubst lib%.a,-l%,$(filter %.a, $^)) $(LFLAGS) $(LFLAGS_POST)
+
+
+ifeq (Makefile.depend, $(wildcard Makefile.depend))
+include Makefile.depend
+endif

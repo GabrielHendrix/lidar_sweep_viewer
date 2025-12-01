@@ -1,4 +1,4 @@
-include ../Makefile.conf
+include Makefile.conf
 
 # MODULE_NAME ="$(shell cat logo)"
 MODULE_NAME = Lidar Sweep Viewer
@@ -38,4 +38,4 @@ voxel_representation: $(VOXEL_REP_OBJS)
 # lidar_sweep_viewer: lidar_sweep_viewer_main.o 
 show_point_cloud: show_point_cloud.o
 
-include ../Makefile.rules
+include Makefile.rules
