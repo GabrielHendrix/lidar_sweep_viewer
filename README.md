@@ -20,7 +20,7 @@ Primeiro baixe um dos exemplos através desses links ([waymo_10](https://drive.g
 Agora descompacte o arquivo baixado no mesmo diretório:
 
 ```
-tar -xf waymo_496_scenes.tar.gz
+tar -xf waymo_x.tar.gz
 ```
 
 ### 📂 Esturura de diretórios e arquivos:
