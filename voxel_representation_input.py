@@ -298,12 +298,13 @@ def create_encoded_bev_from_height_map(height_map, z_range, height_step, filenam
 def main():
     parser = argparse.ArgumentParser(description="Processa nuvens de pontos LiDAR e imagens Bird's-Eye View.")
     parser.add_argument(
-        '--mode', type=str, default='voxels', choices=['points', 'voxels', 'image'],
-        help="Modo de operação: 'points' (BEV de pontos), 'voxels' (BEV de voxels), ou 'image' (pilares de imagem)."
+        '--mode', type=str, default='voxels', choices=['pillars', 'voxels', 'image'],
+        help="Modo de operação: 'pillars' (BEV de pilares), 'voxels' (BEV de voxels), ou 'image' (pilares de imagem)."
     )
+    # ATUALIZADO: Default agora aponta para um .bin e a descrição foi ajustada
     parser.add_argument(
-        '--input_file', type=str, default="/home/lume/Desktop/velodyne_0/0119.ply",
-        help="Caminho para o arquivo de entrada (.ply para modos 'points'/'voxels', .png/.jpg para modo 'image')."
+        '--input_file', type=str, default="/home/lume/Desktop/velodyne_hesai/1000.bin",
+        help="Caminho para o arquivo de entrada (.bin para modos 'pillars'/'voxels'/'generate', .png/.jpg para modo 'image')."
     )
     args = parser.parse_args()
 
@@ -321,14 +322,33 @@ def main():
         )
     else:
         try:
-            pcd = o3d.io.read_point_cloud(args.input_file)
+            # --- LÓGICA ALTERADA PARA LER .BIN ---
+            if args.input_file.endswith('.bin'):
+                # Lê o arquivo binário como float32
+                # O reshape(-1, 4) assume o formato padrão (x, y, z, intensidade)
+                scan = np.fromfile(args.input_file, dtype=np.float32).reshape(-1, 4)
+                
+                # Pegamos apenas as colunas 0, 1 e 2 (x, y, z)
+                points_xyz = scan[:, :3]
+                
+                # Cria o objeto PointCloud do Open3D manualmente
+                pcd = o3d.geometry.PointCloud()
+                pcd.points = o3d.utility.Vector3dVector(points_xyz)
+                
+                # Se quiser usar a intensidade depois, você pode salvar em pcd.colors ou similar,
+                # mas para geometria básica isso basta.
+            else:
+                # Mantém compatibilidade caso ainda passe um .ply ou .pcd
+                pcd = o3d.io.read_point_cloud(args.input_file)
+
         except Exception as e:
             print(f"Erro ao ler o arquivo {args.input_file}: {e}"); return
 
+        # O restante do código permanece igual, pois 'pcd' agora é um objeto válido do Open3D
         pcd_corrected, angle = find_and_correct_ground_plane(pcd)
         if pcd_corrected is None: return
 
-        if args.mode == 'points':
+        if args.mode == 'pillars':
             points = np.asarray(pcd_corrected.points)
             height_map = generate_bev_from_points(
                 points, x_range=x_filter_range, y_range=y_filter_range, z_range=z_filter_range, image_size=image_resolution
@@ -342,6 +362,64 @@ def main():
                 pcd_corrected, x_range=x_filter_range, y_range=y_filter_range, z_range=z_filter_range,
                 voxel_size=voxel_s, image_size=image_resolution
             )
+        elif args.mode == 'generate':
+            points = np.asarray(pcd_corrected.points)
+            height_map = generate_bev_from_points(
+                points, x_range=x_filter_range, y_range=y_filter_range, z_range=z_filter_range, image_size=image_resolution
+            )
+
 
 if __name__ == "__main__":
     main()
+# def main():
+#     parser = argparse.ArgumentParser(description="Processa nuvens de pontos LiDAR e imagens Bird's-Eye View.")
+#     parser.add_argument(
+#         '--mode', type=str, default='voxels', choices=['points', 'voxels', 'image'],
+#         help="Modo de operação: 'points' (BEV de pontos), 'voxels' (BEV de voxels), ou 'image' (pilares de imagem)."
+#     )
+#     parser.add_argument(
+#         '--input_file', type=str, default="/home/lume/Desktop/velodyne_0/0119.ply",
+#         help="Caminho para o arquivo de entrada (.ply para modos 'points'/'voxels'/'generate', .png/.jpg para modo 'image')."
+#     )
+#     args = parser.parse_args()
+
+#     # --- Parâmetros de configuração ---
+#     x_filter_range = (-30, 30)
+#     y_filter_range = (-30, 30)
+#     z_filter_range = (0.0, 3.0) 
+#     image_resolution = 1024
+    
+#     print(f"--- MODO SELECIONADO: {args.mode.upper()} ---")
+
+#     if args.mode == 'image':
+#         load_and_visualize_from_image(
+#             args.input_file, x_range=x_filter_range, y_range=y_filter_range, z_range=z_filter_range
+#         )
+#     else:
+#         try:
+#             pcd = o3d.io.read_point_cloud(args.input_file)
+#         except Exception as e:
+#             print(f"Erro ao ler o arquivo {args.input_file}: {e}"); return
+
+#         pcd_corrected, angle = find_and_correct_ground_plane(pcd)
+#         if pcd_corrected is None: return
+
+#         if args.mode == 'points':
+#             points = np.asarray(pcd_corrected.points)
+#             height_map = generate_bev_from_points(
+#                 points, x_range=x_filter_range, y_range=y_filter_range, z_range=z_filter_range, image_size=image_resolution
+#             )
+#             visualize_pillars_from_map(
+#                 height_map, x_range=x_filter_range, y_range=y_filter_range, z_range=z_filter_range
+#             )
+#         elif args.mode == 'voxels':
+#             voxel_s = 0.2
+#             generate_bev_and_visualize_voxels(
+#                 pcd_corrected, x_range=x_filter_range, y_range=y_filter_range, z_range=z_filter_range,
+#                 voxel_size=voxel_s, image_size=image_resolution
+#             )
+#         elif args.mode == 'generate':
+#             points = np.asarray(pcd_corrected.points)
+#             height_map = generate_bev_from_points(
+#                 points, x_range=x_filter_range, y_range=y_filter_range, z_range=z_filter_range, image_size=image_resolution
+#             )

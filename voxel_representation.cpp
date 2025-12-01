@@ -636,9 +636,9 @@ main(int argc, char** argv)
     }
 
     if (input_base.back() == '/') input_base.pop_back();
-    std::string input = input_base + "/bin_files";
-    std::string mode = args["--mode"]; // image, points, etc.
-    std::string color_map = args["--color"];
+        std::string input = input_base;
+        std::string mode = args["--mode"]; // image, points, etc.
+        std::string color_map = args["--color"];
 
     // Configuração de cores e faixas
     if (color_map != "") color_points = get_color_map(color_map);
@@ -647,13 +647,6 @@ main(int argc, char** argv)
     std::pair<float, float> x_filter_range = {-50.0f, 50.0f};
     std::pair<float, float> y_filter_range = {-50.0f, 50.0f};
     std::pair<float, float> z_filter_range = {0.0f, 3.0f};
-    
-    // --- 3. INICIALIZAÇÃO ---
-    vector<string> scenes = list_subdirectories(input.c_str());
-    if (scenes.empty()) {
-        printf("Nenhuma cena encontrada em: %s\n", input.c_str());
-        return EXIT_FAILURE;
-    }
     
     OpenGLViewer viewer(screen_width, screen_height, "Visualizador LiDAR OpenGL");
     
@@ -670,6 +663,14 @@ main(int argc, char** argv)
     } 
     else // Modo Sequencial (Points / Cloud)
     {
+        input = input_base + "/bin_files";
+
+        // --- 3. INICIALIZAÇÃO ---
+        vector<string> scenes = list_subdirectories(input.c_str());
+        if (scenes.empty()) {
+            printf("Nenhuma cena encontrada em: %s\n", input.c_str());
+            return EXIT_FAILURE;
+        }
         int scene_index = 0;
         while (scene_index < scenes.size()) 
         {
