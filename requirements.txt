@@ -1,0 +1,4 @@
+opencv-python
+waymo-open-dataset-tf-2-12-0==1.6.4
+tensorflow[and_cuda]
+open3d
