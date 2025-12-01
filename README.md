@@ -13,7 +13,7 @@ This module captures the lidar messages to create a runtime visualization of the
 
 ### 🔧 Preparando o dataset:
 
-<!-- Primeiro baixe um dos exemplos através dos links abaixo e salve no diretório ~/astro/data/lidar_sweep_viewer/ de sua máquina. -->
+<!-- Primeiro baixe um dos exemplos através dos links abaixo e salve no diretório de sua preferência. -->
 
 Primeiro baixe um dos exemplos através desses links ([waymo_10](https://drive.google.com/file/d/1aWKEYJjrxpPB-2yiydCXrWggNagqJalC/view?usp=sharing) | [waymo_100](https://drive.google.com/file/d/1xc-psc0x9XwQkRCSAYMdBdzn4T5E6mqR/view?usp=sharing) | [waymo_1000](https://drive.google.com/file/d/116SWcZFknjDkGp69xnYtmc0SkM_w_7-4/view?usp=sharing)) e salve no diretório ~/astro/data/lidar_sweep_viewer/ de sua máquina.
 
@@ -85,19 +85,19 @@ Para visualizar os dados basta executar os seguintes comandos:
 ```
 cd ~/astro/src/lidar_sweep_viewer
 make
-./show_point_cloud --input /home/lume/astro/data/lidar_sweep_viewer/waymo_1000/ -v 100 (velocidade em ms, vocẽ deve aumentar para poucos dados. Padrão é 1)
+./show_point_cloud --input /path/to/data/lidar_sweep_viewer/waymo_1000/ -v 100 (velocidade em ms, vocẽ deve aumentar para poucos dados. Padrão é 1)
 ```
 
 É possível desativar o calculo, na range_image, dos pontos que estão dentro dos bbox3D de objetos detectados com a seguinte flag:
 
 ```
-./show_point_cloud --input /home/lume/astro/data/lidar_sweep_viewer/waymo_1000/ -no_red
+./show_point_cloud --input /path/to/data/lidar_sweep_viewer/waymo_1000/ -no_red
 ```
 
 E tambem podemos desativar o desenho das imagens, mantendo apenas o carregamento dos dados:
 
 ```
-./show_point_cloud --input /home/lume/astro/data/lidar_sweep_viewer/waymo_1000/ -no_show
+./show_point_cloud --input /path/to/data/lidar_sweep_viewer/waymo_1000/ -no_show
 ```
 
 ### ⌨ Controles Interativos
@@ -200,13 +200,13 @@ As funções no arquivo de cabeçalho `voxel_representation.hpp` podem ser inclu
 
 
 ```bash
-./voxel_representation --mode [pillars/voxels] --input /home/lume/astro/data/lidar_sweep_viewer/waymo_1000/ --color [viridis/plasma/inferno/jet/hot/turbo] -v 100 (velocidade em ms, vocẽ deve aumentar para poucos dados. Padrão é 1)
+./voxel_representation --mode [pillars/voxels] --input /path/to/data/lidar_sweep_viewer/waymo_1000/ --color [viridis/plasma/inferno/jet/hot/turbo] -v 100 (velocidade em ms, vocẽ deve aumentar para poucos dados. Padrão é 1)
 ```
 
 Execução default (pillars):
 
 ```bash
-./voxel_representation --input /home/lume/astro/data/lidar_sweep_viewer/waymo_1000/ 
+./voxel_representation --input /path/to/data/lidar_sweep_viewer/waymo_1000/ 
 ```
 
 <!-- ### 🔧 Running lidar_sweep_visualization:
