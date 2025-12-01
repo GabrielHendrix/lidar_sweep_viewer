@@ -15,7 +15,7 @@ This module captures the lidar messages to create a runtime visualization of the
 
 <!-- Primeiro baixe um dos exemplos através dos links abaixo e salve no diretório de sua preferência. -->
 
-Primeiro baixe um dos exemplos através desses links ([waymo_10](https://drive.google.com/file/d/1aWKEYJjrxpPB-2yiydCXrWggNagqJalC/view?usp=sharing) | [waymo_100](https://drive.google.com/file/d/1xc-psc0x9XwQkRCSAYMdBdzn4T5E6mqR/view?usp=sharing) | [waymo_1000](https://drive.google.com/file/d/116SWcZFknjDkGp69xnYtmc0SkM_w_7-4/view?usp=sharing)) e salve no diretório ~/astro/data/lidar_sweep_viewer/ de sua máquina.
+Primeiro baixe um dos exemplos através desses links ([waymo_10](https://drive.google.com/file/d/1aWKEYJjrxpPB-2yiydCXrWggNagqJalC/view?usp=sharing) | [waymo_100](https://drive.google.com/file/d/1xc-psc0x9XwQkRCSAYMdBdzn4T5E6mqR/view?usp=sharing) | [waymo_1000](https://drive.google.com/file/d/116SWcZFknjDkGp69xnYtmc0SkM_w_7-4/view?usp=sharing)) e salve no diretório de preferência em sua máquina.
 
 Agora descompacte o arquivo baixado no mesmo diretório:
 
