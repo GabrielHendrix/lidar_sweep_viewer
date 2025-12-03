@@ -233,7 +233,7 @@ cv::Mat generate_bev_from_points(
         int py = static_cast<int>((point.y - y_range.first) / y_res);
         if (px >= 0 && px < image_size && py >= 0 && py < image_size) {
             if (point.z > height_map.at<float>(py, px)) {
-                height_map.at<float>(py, px) = point.z;
+                height_map.at<float>(py, px) = 10.0; //point.z;
             }
         }
     }
@@ -647,7 +647,7 @@ main(int argc, char** argv)
 
     std::pair<float, float> x_filter_range = {-50.0f, 50.0f};
     std::pair<float, float> y_filter_range = {-50.0f, 50.0f};
-    std::pair<float, float> z_filter_range = {0.0f, 3.0f};
+    std::pair<float, float> z_filter_range = {-10.0f, 30.0f};
     
     OpenGLViewer viewer(screen_width, screen_height, "Visualizador LiDAR OpenGL");
     
