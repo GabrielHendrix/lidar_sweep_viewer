@@ -109,6 +109,7 @@ GroundCorrectionResult find_and_correct_ground_plane(
     int num_iterations) 
 {
     std::cout << "\n--- Executando RANSAC para encontrar e corrigir o plano do solo ---" << std::endl;
+    return {cloud, 0.0, false};
 
     pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
     pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
