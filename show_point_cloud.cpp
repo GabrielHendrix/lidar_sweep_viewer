@@ -258,11 +258,11 @@ int main(int argc, char** argv) {
                     }   
                     else if ((key == 66) || (key == 98)) {
                         show_bboxes = !show_bboxes;
-                        break; // e
+                        break; // b
                     }   
                     else if ((key == 82) || (key == 114)) {
                         draw_red_points = !draw_red_points;
-                        break; // e
+                        break; // r
                     }   
                     else if (key == 27) {
                         return 0;    // ESC
