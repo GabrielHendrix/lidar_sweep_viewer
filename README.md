@@ -2,18 +2,18 @@
 
 > Technical Responsible: Gabriel Hendrix
 
-> Module Classification: <mark style="background-color: green;color: white;">Interface</mark>
+<!-- > Module Classification: <mark style="background-color: green;color: white;">Interface</mark> -->
 
-## Functional Specification
+<!-- ## Functional Specification
 
-This module captures the lidar messages to create a runtime visualization of the distance matrix of each point in the message.
+This module captures the lidar messages to create a runtime visualization of the distance matrix of each point in the message. -->
 
 
 ## Como usar
 
 ### 🔧 Preparando o dataset:
 
-<!-- Primeiro baixe um dos exemplos através dos links abaixo e salve no diretório de sua preferência. -->
+<!-- Primeiro baixe um dos exemplos através dos links abaixo e salve no diretório /dados/hendrix/ (crie na sua máquina de ainda não existir). -->
 
 Primeiro baixe um dos exemplos através desses links ([waymo_10](https://drive.google.com/file/d/1aWKEYJjrxpPB-2yiydCXrWggNagqJalC/view?usp=sharing) | [waymo_100](https://drive.google.com/file/d/1xc-psc0x9XwQkRCSAYMdBdzn4T5E6mqR/view?usp=sharing) | [waymo_1000](https://drive.google.com/file/d/116SWcZFknjDkGp69xnYtmc0SkM_w_7-4/view?usp=sharing)) e salve no diretório de preferência em sua máquina.
 
@@ -82,22 +82,28 @@ Esses dados são transformados conforme a pose e renderizados sobre a imagem bir
 
 Para visualizar os dados basta executar os seguintes comandos:
 
-```
+```bash
 cd /path/to/repo/lidar_sweep_viewer
+```
+
+```bash
 make
-./show_point_cloud --input /path/to/data/lidar_sweep_viewer/waymo_1000/ -v 100 (velocidade em ms, vocẽ deve aumentar para poucos dados. Padrão é 1)
+```
+
+```bash
+./show_point_cloud --input /dados/hendrix/waymo_1000/ -v 100  #(velocidade em ms, vocẽ deve aumentar para poucos dados. Padrão é 1)
 ```
 
 É possível desativar o calculo, na range_image, dos pontos que estão dentro dos bbox3D de objetos detectados com a seguinte flag:
 
-```
-./show_point_cloud --input /path/to/data/lidar_sweep_viewer/waymo_1000/ -no_red
+```bash
+./show_point_cloud --input /dados/hendrix/waymo_1000/ -no_red
 ```
 
 E tambem podemos desativar o desenho das imagens, mantendo apenas o carregamento dos dados:
 
-```
-./show_point_cloud --input /path/to/data/lidar_sweep_viewer/waymo_1000/ -no_show
+```bash
+./show_point_cloud --input /dados/hendrix/waymo_1000/ -no_show
 ```
 
 ### ⌨ Controles Interativos
@@ -199,15 +205,16 @@ O fluxo de trabalho do programa geralmente segue estes passos:
 As funções no arquivo de cabeçalho `voxel_representation.hpp` podem ser incluídas e utilizadas em seu próprio código C++. Você precisará apenas compilar e rodar ou vincular aos seus projetos, garantindo que as dependências (como PCL e OpenCV) estejam configuradas corretamente. Consulte o código-fonte para obter detalhes sobre os parâmetros da função.
 
 
-```bash
-./voxel_representation --mode [pillars/voxels] --input /path/to/data/lidar_sweep_viewer/waymo_1000/ --color [viridis/plasma/inferno/jet/hot/turbo] -v 100 (velocidade em ms, vocẽ deve aumentar para poucos dados. Padrão é 1)
-```
-
 Execução default (pillars):
 
 ```bash
-./voxel_representation --input /path/to/data/lidar_sweep_viewer/waymo_1000/ 
+./voxel_representation --input /dados/hendrix/waymo_1000/ 
 ```
+
+```bash
+./voxel_representation --mode [pillars/voxels] --input /dados/hendrix/waymo_1000/ --color [viridis/plasma/inferno/jet/hot/turbo] -v 100 # (velocidade em ms, vocẽ deve aumentar para poucos dados. Padrão é 1)
+```
+
 
 <!-- ### 🔧 Running lidar_sweep_visualization:
 
