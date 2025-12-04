@@ -16,7 +16,7 @@ LFLAGS += `pkg-config --libs opencv` -lpthread -lBulletCollision -lBulletDynamic
 LFLAGS += -lvtkRenderingCore-7.1 -lvtkCommonDataModel-7.1 -lvtkCommonMath-7.1 -lvtkCommonCore-7.1 -lvtkIOLegacy-7.1 -lvtkIOCore-7.1
 
 # Source files and targets
-SOURCES = voxel_representation.cpp show_point_cloud.cpp opengl_viewer.cpp
+SOURCES = voxel_representation.cpp show_point_cloud.cpp opengl_viewer.cpp utils.cpp
 TARGETS = voxel_representation show_point_cloud
 
 # Object files
@@ -33,7 +33,7 @@ all: $(TARGETS)
 voxel_representation: voxel_representation.o opengl_viewer.o
 	$(CXX) $(CXXFLAGS) $(IFLAGS) $^ -o $@ $(LFLAGS)
 
-show_point_cloud: show_point_cloud.o opengl_viewer.o
+show_point_cloud: show_point_cloud.o opengl_viewer.o utils.o
 	$(CXX) $(CXXFLAGS) $(IFLAGS) $^ -o $@ $(LFLAGS)
 
 clean:
