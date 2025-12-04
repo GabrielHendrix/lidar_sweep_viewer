@@ -15,6 +15,7 @@ int main(int argc, char** argv) {
     float meters = 51.2f;
     int size_in_pixels = 1024;
     bool paused = false;
+    bool show_bboxes = false;
 
     // --- 1. Processamento de Argumentos ---
     for (int i = 1; i < argc; ++i) {
@@ -179,7 +180,7 @@ int main(int argc, char** argv) {
 
             vector<vector<array<float, 3>>> all_bbox;
             vector<vector<float>> all_transformed_bbox_for_rangeview;
-            read_bbox_file(bbox_root_dir, scenes[s], pose_file_name, all_bbox, pose, birdview_image, all_transformed_bbox_for_rangeview, meters, size_in_pixels);
+            read_bbox_file(bbox_root_dir, scenes[s], pose_file_name, all_bbox, pose, birdview_image, all_transformed_bbox_for_rangeview, meters, size_in_pixels, show_bboxes);
            
             if (show) {
                 float *points_xyz = (float*) malloc(num_points * POINTS_PER_RECORD * sizeof(float));
@@ -253,6 +254,14 @@ int main(int argc, char** argv) {
                     }     
                     else if ((key == 69) || (key == 101)) {
                         i = num_files;
+                        break; // e
+                    }   
+                    else if ((key == 66) || (key == 98)) {
+                        show_bboxes = !show_bboxes;
+                        break; // e
+                    }   
+                    else if ((key == 82) || (key == 114)) {
+                        draw_red_points = !draw_red_points;
                         break; // e
                     }   
                     else if (key == 27) {

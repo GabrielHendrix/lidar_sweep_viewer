@@ -418,7 +418,7 @@ bool read_pose_file(const char *filename, float pose[4][4]) {
     return true;
 }
 
-void read_bbox_file(const char *objs_bbox_dir, const string& scene_name, const string& pose_name, vector<vector<array<float, 3>>> &all_bbox, float lidar_pose[4][4], cv::Mat& birdview_image, vector<vector<float>> &all_transformed_bbox_for_rangeview, float meters, int size_in_pixels) {
+void read_bbox_file(const char *objs_bbox_dir, const string& scene_name, const string& pose_name, vector<vector<array<float, 3>>> &all_bbox, float lidar_pose[4][4], cv::Mat& birdview_image, vector<vector<float>> &all_transformed_bbox_for_rangeview, float meters, int size_in_pixels, bool show_bboxes) {
     int scale = size_in_pixels / (2 * meters);
     string pose_number = take_substring(1, ".", pose_name);
     if (pose_number.empty()) {
@@ -472,7 +472,9 @@ void read_bbox_file(const char *objs_bbox_dir, const string& scene_name, const s
                 transformar_para_sistema_lidar_topo(bbox_aux, lidar_pose, transformed_bbox_for_birdeyeview);
                 transform_vertices(bbox_aux, lidar_pose, transformed_bbox_for_rangeview);
                 all_transformed_bbox_for_rangeview.push_back(transformed_bbox_for_rangeview);
-                draw_bounding_box_birdview(transformed_bbox_for_birdeyeview, birdview_image, meters, scale);
+                if (show_bboxes) {
+                    draw_bounding_box_birdview(transformed_bbox_for_birdeyeview, birdview_image, meters, scale);
+                }
             }
 
             fclose(file);
