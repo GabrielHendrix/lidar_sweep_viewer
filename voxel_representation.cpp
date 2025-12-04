@@ -8,7 +8,7 @@
 #include <map>
 #include <algorithm>
 #include <chrono>
-
+#include <filesystem> // Obrigatório (C++17)
 #include <Eigen/Dense>
 
 // Includes da PCL
@@ -31,6 +31,8 @@
 #include "opengl_viewer.hpp"
 
 using namespace std;
+// Alias para facilitar a escrita (opcional, mas recomendado)
+namespace fs = std::filesystem;
 
 std::string default_color_map = "jet"; 
 
@@ -108,8 +110,8 @@ GroundCorrectionResult find_and_correct_ground_plane(
     float distance_threshold,
     int num_iterations) 
 {
-    std::cout << "\n--- Executando RANSAC para encontrar e corrigir o plano do solo ---" << std::endl;
     return {cloud, 0.0, false};
+    std::cout << "\n--- Executando RANSAC para encontrar e corrigir o plano do solo ---" << std::endl;
 
     pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
     pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
@@ -233,7 +235,7 @@ cv::Mat generate_bev_from_points(
         int py = static_cast<int>((point.y - y_range.first) / y_res);
         if (px >= 0 && px < image_size && py >= 0 && py < image_size) {
             if (point.z > height_map.at<float>(py, px)) {
-                height_map.at<float>(py, px) = 10.0; //point.z;
+                height_map.at<float>(py, px) = point.z;
             }
         }
     }
@@ -369,7 +371,8 @@ void generate_bev_and_visualize_voxels_opengl(
     const std::pair<float, float>& y_range,
     const std::pair<float, float>& z_range,
     float voxel_size,
-    int image_size)
+    int image_size,
+    string img_file_name)
     {
     std::cout << "\n--- Gerando BEV e visualização a partir de Voxels com OpenGL ---" << std::endl;
     std::cout << "Tamanho do Voxel: " << voxel_size << " metros" << std::endl;
@@ -432,7 +435,7 @@ void generate_bev_and_visualize_voxels_opengl(
     }
     
     height_map.setTo(z_range.first, height_map < z_range.first);
-    create_encoded_bev_from_height_map(height_map, z_range, voxel_size, "bird_eye_view_voxels.png");
+    create_encoded_bev_from_height_map(height_map, z_range, voxel_size, img_file_name);
 
     try {
         viewer.add_voxels(positions, colors);
@@ -647,7 +650,7 @@ main(int argc, char** argv)
 
     std::pair<float, float> x_filter_range = {-50.0f, 50.0f};
     std::pair<float, float> y_filter_range = {-50.0f, 50.0f};
-    std::pair<float, float> z_filter_range = {-10.0f, 30.0f};
+    std::pair<float, float> z_filter_range = {0.0f, 3.0f};
     
     OpenGLViewer viewer(screen_width, screen_height, "Visualizador LiDAR OpenGL");
     
@@ -675,6 +678,7 @@ main(int argc, char** argv)
         int scene_index = 0;
         while (scene_index < scenes.size()) 
         {
+            printf("\nDiretório: %s\n", input.c_str());
             printf("\nProcessando cena: %s\n", scenes[scene_index].c_str());
             string bin_scene_dir = string(input) + "/" + scenes[scene_index];
             vector<string> bin_files = list_files_with_extension(bin_scene_dir.c_str(), ".bin");
@@ -693,9 +697,28 @@ main(int argc, char** argv)
             
             int file_index = 0;
             // --- LOOP DOS ARQUIVOS ---
+            // 2. Extraia apenas o diretório (remove o nome do arquivo do final)
+            fs::path dirs_path = input_base + "/" + "bev" + "/" + scenes[scene_index];
+
+            // 3. Verifique se existe e crie a estrutura
+            // O create_directories cria todas as subpastas necessárias de uma vez
+            if (!fs::exists(dirs_path)) {
+                if (fs::create_directories(dirs_path)) {
+                    std::cout << "Pastas criadas com sucesso: " << dirs_path << "\n";
+                } else {
+                    std::cerr << "Erro ao criar pastas (ou elas já existiam).\n";
+                }
+            }
+
             while (file_index < bin_files.size()) {
+                char strIndex[12]; // Tamanho suficiente para int de 32 bits + null terminator
+                // Sintaxe: snprintf(buffer, tamanho, formato, variavel)
+                snprintf(strIndex, sizeof(strIndex), "%d", file_index);
                 string bin_file_path = string(bin_files_c[file_index]);
-            
+                
+                string img_file_name = (input_base + "/" + "bev" + "/" + scenes[scene_index] + "/" + strIndex) + ".png";
+                printf("\nProcessando Imagem: %s\n", img_file_name.c_str());
+                
                 // Carrega dados
                 pcl::PointCloud<pcl::PointXYZ>::Ptr pcd = load_bin_file(bin_file_path);
                 if (!pcd || pcd->empty()) {
@@ -712,7 +735,7 @@ main(int argc, char** argv)
                 cv::moveWindow(winName, screen_width/2, 0);
                 
                 if (mode == "points")
-                    generate_bev_and_visualize_voxels_opengl(viewer, pcd, x_filter_range, y_filter_range, z_filter_range, height_step, screen_height);
+                    generate_bev_and_visualize_voxels_opengl(viewer, pcd, x_filter_range, y_filter_range, z_filter_range, height_step, screen_height, img_file_name);
                 else
                     visualize_pillars_from_map_opengl(viewer, height_map, x_filter_range, y_filter_range, z_filter_range);
 
