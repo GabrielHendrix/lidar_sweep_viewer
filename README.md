@@ -15,7 +15,7 @@ This module captures the lidar messages to create a runtime visualization of the
 
 <!-- Primeiro baixe um dos exemplos através dos links abaixo e salve no diretório /dados/hendrix/ (crie na sua máquina de ainda não existir). -->
 
-Primeiro baixe um dos exemplos através desses links ([waymo_10](https://drive.google.com/file/d/1aWKEYJjrxpPB-2yiydCXrWggNagqJalC/view?usp=sharing) | [waymo_100](https://drive.google.com/file/d/14tn2D7QxNo3MLwXRuiXZNeUWUHws2UDV/view?usp=sharing) | [waymo_1000](https://drive.google.com/file/d/1z4b0QzQHsxyFNNvcqHzuCptoDm_DUdRO/view?usp=sharing)) e salve no diretório de preferência em sua máquina.
+Primeiro baixe um dos exemplos através desses links ([waymo_10](https://drive.google.com/file/d/1r6ZK1GBGBJ_HPMohtXgqvP4HfKaG7LyH/view?usp=sharing) | [waymo_100](https://drive.google.com/file/d/14tn2D7QxNo3MLwXRuiXZNeUWUHws2UDV/view?usp=sharing) | [waymo_1000](https://drive.google.com/file/d/1z4b0QzQHsxyFNNvcqHzuCptoDm_DUdRO/view?usp=sharing)) e salve no diretório de preferência em sua máquina.
 
 Agora descompacte o arquivo baixado no mesmo diretório:
 
@@ -109,6 +109,12 @@ E tambem podemos desativar o desenho das imagens, mantendo apenas o carregamento
 ### ⌨ Controles Interativos
 
 Durante a visualização:
+- A/a: Voltar uma imagem. 
+- D/d: Avançar uma imagem. 
+- Q/a: Voltar uma cena. 
+- E/e: Avançar uma cena. 
+- B/b: Ativa/Desativa desenho das bboxes na imagem bev. 
+- R/r: Ativa/Desativa desenho das áreas vermelhas na range image. 
 - Espaço: Pausa ou continua.
 - ESC: Encerra o programa.
 
