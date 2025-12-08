@@ -134,6 +134,11 @@ int main(int argc, char** argv) {
         qsort((void*)bin_files_c, bin_files.size(), sizeof(char*), compare_files);
         qsort((void*)pose_files_c, pose_files.size(), sizeof(char*), compare_files);
 
+        const std::string winName = "LiDAR Range and Bird's-Eye View";
+        cv::namedWindow(winName, cv::WINDOW_NORMAL);
+        cv::resizeWindow(winName, 1280, 720);
+        // cv::setWindowProperty(winName, cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
+                
         // --- 5. Loop dos Arquivos ---
         int i = 0;
         while (i < num_files && i >= 0) {
@@ -184,6 +189,22 @@ int main(int argc, char** argv) {
            
             if (show) {
                 float *points_xyz = (float*) malloc(num_points * POINTS_PER_RECORD * sizeof(float));
+
+                // --- CORREÇÃO: LEITURA DOS DADOS ---
+                FILE *stream = fopen(bin_file_path.c_str(), "rb");
+                if (stream) {
+                    size_t num_read = fread(points_xyz, sizeof(float), num_points * POINTS_PER_RECORD, stream);
+                    fclose(stream);
+                    
+                    // Validação opcional para garantir que leu tudo
+                    if (num_read != num_points * POINTS_PER_RECORD) {
+                        std::cerr << "Aviso: Leitura incompleta do arquivo binário." << std::endl;
+                    }
+                } else {
+                    std::cerr << "Erro: Nao foi possivel abrir o arquivo binario para leitura 3D." << std::endl;
+                }
+                // ------------------------------------
+
                 vector<lidar_point> lidar_points;
                 for (size_t k = 0; k < num_points; k++) {
                     lidar_point point;
@@ -227,9 +248,6 @@ int main(int argc, char** argv) {
                 cv::Rect roi_birdview(480, 128, resized_birdview.cols, resized_birdview.rows);
                 resized_birdview.copyTo(bg(roi_birdview));
 
-                const std::string winName = "LiDAR Range and Bird's-Eye View";
-                cv::namedWindow(winName, cv::WINDOW_NORMAL);
-                cv::setWindowProperty(winName, cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
                 cv::imshow(winName, bg);
 
                 while (true) {
