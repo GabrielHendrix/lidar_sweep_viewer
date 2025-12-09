@@ -1,0 +1,188 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+
+_base_ = [
+    '../../_base_/models/mae_vit-base-p16.py',
+    '../../_base_/default_runtime.py',
+]
+
+# --- CONFIGURAÇÕES GERAIS ---
+patch_size = 16
+image_size = 1024
+
+# Visualizar e Salvar com frequência para monitorar o teste
+vis_every_iters = 10
+save_every_epochs = 50
+
+# Modelo Escolhido
+#model_name = 'sapiens_0.3b'; embed_dim=1024; num_layers=24
+model_name = 'sapiens_1b'; embed_dim=1536; num_layers=40
+# model_name = 'sapiens_2b'; embed_dim=1920; num_layers=48
+
+num_patches = (image_size // patch_size) ** 2
+
+custom_imports = dict(
+    imports=['mmpretrain.datasets', 'mmpretrain.visualization'],
+    allow_failed_imports=False
+)
+
+# --- PREPROCESSAMENTO ---
+data_preprocessor = dict(
+    type='SelfSupDataPreprocessor',
+    mean=[123.675, 116.28, 103.53],
+    std=[58.395, 57.12, 57.375],
+    to_rgb=True
+)
+
+# [ALTERADO] Pipeline Estático (Sem Randomização para Overfit)
+train_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(
+        type='Resize',  # Troquei RandomResizedCrop por Resize simples
+        scale=(image_size, image_size), # Força tamanho exato 1024x1024
+        backend='pillow',
+        interpolation='bicubic'),
+    # Removido: dict(type='RandomFlip', prob=0.5),
+    dict(type='PackInputs')
+]
+
+# [ALTERADO] Dataloader para ler pasta local e Batch pequeno
+train_dataloader = dict(
+    batch_size=4, # <--- Reduzido para evitar OOM (aumente se tiver muita VRAM)
+    batch_size=8, # <--- Aumentado para acelerar o treino com poucas imagens
+    num_workers=4,
+    persistent_workers=True,
+    sampler=dict(type='DefaultSampler', shuffle=False), # Shuffle False ajuda no debug visual
+    collate_fn=dict(type='default_collate'),
+    dataset=dict(
+        type='CustomDataset', # <--- Usa pasta genérica de imagens
+        data_root='/home/hendrix/Desktop/indir/', # <--- Certifique-se que suas 10 imagens estão aqui
+        pipeline=train_pipeline
+    )
+)
+
+# --- MODELO ---
+model = dict(
+    backbone=dict(
+        type='MAEViT',
+        arch=model_name,
+        patch_size=patch_size,
+        img_size=image_size,
+        final_norm=True
+    ),
+    neck=dict(
+        type='MAEPretrainDecoder',
+        embed_dim=embed_dim,
+        patch_size=patch_size,
+        num_patches=num_patches
+    ),
+    head=dict(patch_size=patch_size, norm_pix=True)
+)
+
+# --- OTIMIZADOR ---
+# [ALTERADO] LR fixo e Weight Decay zerado
+optim_wrapper = dict(
+    optimizer=dict(
+        type='AdamW',
+        lr=1e-4, # <--- Valor fixo e robusto para começar
+        lr=1e-3, # <--- AUMENTADO para acelerar o overfitting
+        betas=(0.9, 0.95),
+        weight_decay=0.0), # <--- Zerado para facilitar a memorização (overfit)
+    clip_grad=dict(max_norm=1.0, error_if_nonfinite=True),
+    clip_grad=None, # <--- Desativado para permitir passos maiores
+    paramwise_cfg=dict(
+        custom_keys={
+            'ln': dict(decay_mult=0.0),
+            'bias': dict(decay_mult=0.0),
+            'pos_embed': dict(decay_mult=0.),
+            'mask_token': dict(decay_mult=0.),
+            'cls_token': dict(decay_mult=0.)
+        }
+    )
+)
+
+# --- SCHEDULER (Agendador de LR) ---
+# Ajustado para o ciclo curto de 300 épocas
+param_scheduler = [
+    dict(
+        type='LinearLR',
+        start_factor=1e-4,
+        by_epoch=True,
+        begin=0,
+        end=10, # Warmup rápido
+        convert_to_iter_based=True),
+    dict(
+        type='CosineAnnealingLR',
+        T_max=290,
+        by_epoch=True,
+        begin=10,
+        end=300,
+        convert_to_iter_based=True)
+]
+# [ALTERADO] --- SCHEDULER (Agendador de LR) ---
+# Removido para usar uma taxa de aprendizado constante e agressiva
+param_scheduler = []
+
+# --- RUNTIME ---
+train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=300)
+
+default_hooks = dict(
+    checkpoint=dict(type='CheckpointHook', interval=save_every_epochs, max_keep_ckpts=2),
+    logger=dict(type='LoggerHook', interval=1), # Log a cada iteração para ver o loss caindo
+    visualization=dict(type='VisualizationHook', enable=True),
+)
+
+randomness = dict(seed=0, diff_rank_seed=True)
+resume = True
+
+# [ALTERADO] Desligar auto-scale para respeitar nosso LR de 1e-4
+auto_scale_lr = dict(enable=False)
+
+custom_hooks = [
+    dict(
+        type='PretrainVisualizationHook',
+        enable=True,
+        vis_every_iters=vis_every_iters,
+        vis_max_samples=4, # Visualiza o batch todo (se for 4)
+    )
+]
+
+env_cfg = dict(
+    cudnn_benchmark=True,
+    mp_cfg=dict(mp_start_method='spawn', opencv_num_threads=0),
+    dist_cfg=dict(backend='nccl'),
+)
+
+
+## for dummy testing
+test_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(
+        type='Resize',
+        scale=image_size,
+        interpolation='bicubic',
+        backend='pillow'),
+    dict(type='PackInputs'),
+]
+
+
+test_dataloader = dict(
+    batch_size=4,
+    num_workers=4,
+    dataset=dict(
+        type='CustomDataset', # <--- Usa pasta genérica de imagens
+        data_root='/home/hendrix/Desktop/indir/', # <--- Certifique-se que suas 10 imagens estão aqui
+        pipeline=test_pipeline
+    ),
+    persistent_workers=True,
+)
+#test_dataloader = dict(
+#    batch_size=4,
+#    num_workers=4,
+#    dataset=dict(
+#        type='CustomDataset', # <--- Usa pasta genérica de imagens
+#        data_root='/home/hendrix/Desktop/indir/', # <--- Certifique-se que suas 10 imagens estão aqui
+#        pipeline=test_pipeline
+#    ),
+#    persistent_workers=True,
+#)
