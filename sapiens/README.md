@@ -1,3 +1,5 @@
+> **Note:** This directory contains a copy of the Sapiens project, developed by Facebook Research. The original repository can be found at [https://github.com/facebookresearch/sapiens](https://github.com/facebookresearch/sapiens).
+
 <p align="center">
   <img src="./assets/sapiens_animation.gif" alt="Sapiens" title="Sapiens" width="500"/>
 </p>

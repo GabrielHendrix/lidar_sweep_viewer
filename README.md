@@ -287,3 +287,52 @@ source venv/bin/activate
 python3 show_rangeview_and_birdview.py -tf /dados/lidar_sweep_viewer/examples100 -s /dados/lidar_sweep_viewer/testing.tfrecord-00000-of-00150
 ```
  -->
+
+## 🧬 Ambiente de Desenvolvimento Sapiens
+
+O diretório `sapiens` contém o código do projeto Sapiens. Para configurar o ambiente de desenvolvimento e executar os modelos, siga os passos abaixo.
+
+### 🐍 Configuração do Ambiente Conda
+
+Os seguintes comandos irão criar e configurar um ambiente Conda chamado `sapiens_venv` com todas as dependências necessárias.
+
+1.  **Navegue até o diretório `pretrain`:**
+
+    Lembre-se de alterar `/path/to/your/repo/` para o caminho real do seu repositório.
+
+    ```bash
+    cd /path/to/your/repo/lidar_sweep_viewer/sapiens/pretrain/
+    ```
+
+2.  **Crie o ambiente Conda a partir do arquivo de ambiente:**
+
+    Este comando utiliza o arquivo `sapiens_env.yml` para criar um novo ambiente com as bibliotecas Python e dependências corretas.
+
+    ```bash
+    conda env create -f sapiens_env.yml
+    ```
+
+3.  **Ative o ambiente recém-criado:**
+
+    ```bash
+    conda activate sapiens_venv
+    ```
+
+4.  **Instale o MMCV:**
+
+    O `mim` (gerenciador de pacotes do OpenMMLab) é usado para garantir que o `mmcv` seja compilado e instalado corretamente, o que é crucial para a compatibilidade de hardware.
+
+    ```bash
+    mim install mmcv==2.0.1
+    ```
+
+5.  **Instale o projeto Sapiens em modo de edição:**
+
+    A instalação em modo de edição (`-e`) permite que as alterações feitas no código-fonte sejam refletidas imediatamente no ambiente, facilitando o desenvolvimento.
+
+    ```bash
+    python -m pip install -e .
+    ```
+
+Após seguir estes passos, o ambiente `sapiens_venv` estará pronto para ser utilizado.
+
