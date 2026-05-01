@@ -10,6 +10,56 @@
 
 using namespace std;
 
+void convert_timestamp_to_datetime(const char *rawname, char *buffer, cv::Mat &img)
+{
+    // 1. Converter string para long long (int64)
+    // strtoll = String to Long Long
+    long long timestamp_us = strtoll(rawname, NULL, 10);
+
+    // 2. Separar Segundos e Microssegundos
+    // O time_t armazena apenas segundos
+    time_t seconds = (time_t)(timestamp_us / 1000000);
+    long micros = timestamp_us % 1000000;
+
+    // 3. Converter segundos para estrutura de data (struct tm)
+    // localtime converte para o fuso horário local (igual ao Python por padrão)
+    struct tm *dt_object = localtime(&seconds);
+
+    // 4. Formatar a parte da data e hora (Sem os microssegundos)
+    strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", dt_object);
+
+    // 5. Imprimir juntando a data formatada + os microssegundos
+    // %s imprime a data
+    // %06ld imprime os microssegundos com 6 dígitos (preenchendo com zero se necessário)
+    printf("Data Detalhada: %s.%06ld\n", buffer, micros);
+    
+    // Configurações da fonte
+    int fontFace = cv::FONT_HERSHEY_SIMPLEX;
+    double fontScale = 0.8; // Tamanho da letra
+    int thickness = 2;      // Espessura
+    int margin = 20;        // Margem das bordas
+
+    // Define a posição (Canto Inferior Esquerdo)
+    // X = margem
+    // Y = Altura da imagem - margem
+    cv::Point textOrg(margin, img.rows - margin);
+
+    // Cor do texto (Scalar(B, G, R)). 
+    // Se sua imagem for grayscale (1 canal), passe apenas cv::Scalar(255).
+    // Se for colorida (3 canais), passe cv::Scalar(255, 255, 255).
+    cv::Scalar colorYellow(0, 255, 255);
+    cv::Scalar colorWhite(255, 255, 255);
+    cv::Scalar colorBlack(0, 0, 0);
+
+    // Desenha o mesmo texto em PRETO um pouco mais grosso primeiro
+    // para criar uma borda (outline) e garantir leitura em qualquer fundo.
+    cv::putText(img, buffer, textOrg, fontFace, fontScale, colorBlack, thickness + 3);
+
+    // Desenha o texto BRANCO por cima
+    cv::putText(img, buffer, textOrg, fontFace, fontScale, colorYellow, thickness);
+}
+
+
 // Função para calcular o valor máximo de uma coordenada Z
 float max(float arr[], int size) {
     float max_val = -FLT_MAX;
@@ -263,10 +313,24 @@ int invert_matrix(const float mat[4][4], float inv[4][4]) {
 
 void transform_vertices(const vector<array<float, 3>>& vertices, float lidar_pose[4][4], vector<float>& result) {
     float lidar_pose_inverse[4][4];
-    if (!invert_matrix(lidar_pose, lidar_pose_inverse)) {
-        cerr << "Erro ao inverter a matriz de pose." << endl;
+    // --- MODIFICAÇÃO: Preenche com Matriz Identidade (Diagonal = 1, Resto = 0) ---
+    // Isso faz com que: Coordenada Transformada == Coordenada Original
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            if (i == j) {
+                lidar_pose_inverse[i][j] = 1.0f; // Diagonal principal
+            } else {
+                lidar_pose_inverse[i][j] = 0.0f; // Restante
+            }
+        }
+    }
+
+    /* // O código de inversão original foi comentado/removido
+    if (!invert_matrix(lidar_pose, lidar_pose_inversa)) {
+        printf("Erro ao inverter a matriz de pose.\n");
         return;
     }
+    */
 
     for (size_t i = 0; i < vertices.size(); i++) {
         float homogeneous_vertex[4] = { vertices[i][0], vertices[i][1], vertices[i][2], 1.0f };
@@ -280,18 +344,31 @@ void transform_vertices(const vector<array<float, 3>>& vertices, float lidar_pos
 }
 
 void transformar_para_sistema_lidar_topo(const vector<array<float, 3>>& bbox, float lidar_pose[4][4], vector<float>& result) {
-    float lidar_pose_inversa[4][4];
-    
+    float lidar_pose_inverse[4][4];
+    // --- MODIFICAÇÃO: Preenche com Matriz Identidade (Diagonal = 1, Resto = 0) ---
+    // Isso faz com que: Coordenada Transformada == Coordenada Original
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            if (i == j) {
+                lidar_pose_inverse[i][j] = 1.0f; // Diagonal principal
+            } else {
+                lidar_pose_inverse[i][j] = 0.0f; // Restante
+            }
+        }
+    }
+
+    /* // O código de inversão original foi comentado/removido
     if (!invert_matrix(lidar_pose, lidar_pose_inversa)) {
         printf("Erro ao inverter a matriz de pose.\n");
         return;
     }
+    */
 
     for (size_t i = 0; i < bbox.size(); i++) {
         float track_coords_homogeneas[4] = { bbox[i][0], bbox[i][1], bbox[i][2], 1.0f };
         float track_coords_transformadas[4];
         
-        multiply_matrix_vector(lidar_pose_inversa, track_coords_homogeneas, track_coords_transformadas);
+        multiply_matrix_vector(lidar_pose_inverse, track_coords_homogeneas, track_coords_transformadas);
 
         result.push_back(track_coords_transformadas[0]);
         result.push_back(track_coords_transformadas[1]);

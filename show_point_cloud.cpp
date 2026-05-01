@@ -8,7 +8,7 @@ namespace fs = std::filesystem;
 using namespace std;
 
 int main(int argc, char** argv) {
-    bool draw_red_points = true;
+    bool draw_red_points = false;
     bool show = true;
     std::string input_base_path = "";
     int wait_delay = 1; // Padrão: 1ms (máxima velocidade)
@@ -16,6 +16,7 @@ int main(int argc, char** argv) {
     int size_in_pixels = 1024;
     bool paused = false;
     bool show_bboxes = false;
+    int range_image_height = 64;
 
     // --- 1. Processamento de Argumentos ---
     for (int i = 1; i < argc; ++i) {
@@ -44,13 +45,25 @@ int main(int argc, char** argv) {
                 std::cerr << "Erro: O argumento -v requer um valor em milissegundos." << std::endl;
                 return EXIT_FAILURE;
             }
+        } else if (arg == "-h") {
+            if (i + 1 < argc) {
+                try {
+                    range_image_height = std::stoi(argv[++i]);
+                } catch (...) {
+                    std::cerr << "Erro: Valor inválido para -h. Escolha os tamanhos 32 ou 64." << std::endl;
+                    return EXIT_FAILURE;
+                }
+            } else {
+                std::cerr << "Erro: O argumento -v requer um valor em milissegundos." << std::endl;
+                return EXIT_FAILURE;
+            }
         }
     }
 
     // --- 2. Validação do Caminho de Entrada ---
     if (input_base_path.empty()) {
         std::cerr << "Erro: Caminho de entrada nao especificado." << std::endl;
-        std::cerr << "Uso: " << argv[0] << " --input <caminho> [-v <ms>] [-no_red] [-no_show]" << std::endl;
+        std::cerr << "Uso: " << argv[0] << " --input <caminho> [-v <ms>] -h 32 ou 64 [-no_red] [-no_show]" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -62,6 +75,7 @@ int main(int argc, char** argv) {
     std::string pose_root_str = input_base_path + "/poses";
     std::string bbox_root_str = input_base_path + "/objs_bbox";
     std::string images_root_str = input_base_path + "/images";
+    std::string range_images_root_str = input_base_path + "/range_images";
  
     const char *bin_root_dir = bin_root_str.c_str();
     const char *pose_root_dir = pose_root_str.c_str();
@@ -90,11 +104,29 @@ int main(int argc, char** argv) {
         string pose_scene_dir = string(pose_root_dir) + "/" + scenes[s];
         string bbox_scene_dir = string(bbox_root_dir) + "/" + scenes[s];
         string images_scene_dir = string(images_root_str) + "/" + scenes[s];
+        string range_images_scene_dir = string(range_images_root_str) + "/" + scenes[s];
         fs::path images_dir_path = images_scene_dir;
+        fs::path range_images_dir_path = range_images_scene_dir;
 
         if (!fs::exists(images_dir_path)) {
             if (fs::create_directories(images_dir_path)) {
                 std::cout << "Pastas criadas com sucesso: " << images_dir_path << "\n";
+            } else {
+                std::cerr << "Erro ao criar pastas (ou elas já existiam).\n";
+            }
+        }
+    
+        if (!fs::exists(images_dir_path)) {
+            if (fs::create_directories(images_dir_path)) {
+                std::cout << "Pastas criadas com sucesso: " << images_dir_path << "\n";
+            } else {
+                std::cerr << "Erro ao criar pastas (ou elas já existiam).\n";
+            }
+        }
+
+        if (!fs::exists(range_images_dir_path)) {
+            if (fs::create_directories(range_images_dir_path)) {
+                std::cout << "Pastas criadas com sucesso: " << range_images_dir_path << "\n";
             } else {
                 std::cerr << "Erro ao criar pastas (ou elas já existiam).\n";
             }
@@ -150,9 +182,13 @@ int main(int argc, char** argv) {
             char strIndex[12];
             snprintf(strIndex, sizeof(strIndex), "%d", i);
 
-            string image_file_path = string(images_scene_dir) + "/" + strIndex + ".png";
+            std::string filename = std::filesystem::path(bin_file_path).filename().string();
+            std::string rawname = std::filesystem::path(filename).stem().string();
+
+            string image_file_path = string(images_scene_dir) + "/" + rawname + ".png";
             size_t num_points;
             read_bin_file(bin_file_path.c_str(), num_points, birdview_image, meters, size_in_pixels);
+
             if (!fs::exists(image_file_path)) {
                 calculate_birdview_image(birdview_image, num_points, meters, size_in_pixels);
 
@@ -166,7 +202,7 @@ int main(int argc, char** argv) {
             {
                 birdview_image = cv::imread(image_file_path);
                 if (!birdview_image.empty()) {
-                    std::cout << "Imagem já existia e foi carreagada com sucesso: " << image_file_path << "\n";
+                    std::cout << "Imagem já existia e foi carregada com sucesso: " << image_file_path << "\n";
                 }
             }
 
@@ -218,6 +254,7 @@ int main(int argc, char** argv) {
 
                     lidar_points.push_back(point);
                     intensities[k] = lidar_points[k].range;
+                    // printf("%f %f %f %f\n", lidar_points[k].cartesian_x, lidar_points[k].cartesian_y, lidar_points[k].cartesian_z, lidar_points[k].range);
                 }
 
                 if (draw_red_points)
@@ -235,6 +272,32 @@ int main(int argc, char** argv) {
 
                 float threshold = 75.0f;
                 cv::Mat normalized_image = normalizar(range_image_reshaped, all_points_colors_reshaped, threshold);
+            
+                string range_image_file_path = string(range_images_scene_dir) + "/" + rawname + ".png";
+                if (!fs::exists(range_image_file_path)) {
+                    // cv::Mat resized_range_image;
+                    // Supondo que normalized_image tenha 64 linhas e 1024 colunas
+                    cv::Mat resized_range_image(range_image_height, normalized_image.cols, normalized_image.type());
+
+                    // for (int i = 0; i < new_height; ++i) {
+                    //     // Copia a linha 0, 2, 4... da origem para a linha 0, 1, 2... do destino
+                    //     normalized_image.row(i * 2).copyTo(resized_range_image.row(i));
+                    // }
+                    // cv::resize(normalized_image, resized_range_image, cv::Size(1024, range_image_height), 0, 0, cv::INTER_NEAREST);
+
+                    if (cv::imwrite(range_image_file_path, normalized_image)) {
+                        std::cout << "Imagem criada com sucesso: " << range_image_file_path << "\n";
+                    } else {
+                        std::cerr << "Erro ao criar imagens (ou elas já existiam).\n";
+                    }
+                }
+                // else 
+                // {
+                //     birdview_image = cv::imread(range_image_file_path);
+                //     if (!birdview_image.empty()) {
+                //         std::cout << "Imagem já existia e foi carreagada com sucesso: " << image_file_path << "\n";
+                //     }
+                // }
 
                 cv::Mat resized_range;
                 cv::resize(normalized_image, resized_range, cv::Size(1920, 128), 0, 0, cv::INTER_LINEAR);
@@ -247,6 +310,9 @@ int main(int argc, char** argv) {
 
                 cv::Rect roi_birdview(480, 128, resized_birdview.cols, resized_birdview.rows);
                 resized_birdview.copyTo(bg(roi_birdview));
+                
+                char buffer[80];
+                convert_timestamp_to_datetime(rawname.c_str(), buffer, bg);
 
                 cv::imshow(winName, bg);
 
