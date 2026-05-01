@@ -7,10 +7,11 @@
 # model settings
 model = dict(
     type='MAE',
-    backbone=dict(type='MAEViT', arch='b', patch_size=16, mask_ratio=0.75),
+    backbone=dict(type='MAEViT', arch='b', patch_width=2650, patch_height=1024, mask_ratio=0.75),
     neck=dict(
         type='MAEPretrainDecoder',
-        patch_size=16,
+        patch_width=25,
+        patch_height=16,
         in_chans=3,
         embed_dim=768,
         decoder_embed_dim=512,
@@ -21,7 +22,8 @@ model = dict(
     head=dict(
         type='MAEPretrainHead',
         norm_pix=True,
-        patch_size=16,
+        patch_width=25,
+        patch_height=16,
         loss=dict(type='PixelReconstructionLoss', criterion='L2')),
     init_cfg=[
         dict(type='Xavier', layer='Linear', distribution='uniform'),

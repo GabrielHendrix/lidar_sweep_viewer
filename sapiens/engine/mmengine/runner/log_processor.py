@@ -16,7 +16,8 @@ import torch
 
 from mmengine.device import get_max_cuda_memory, is_cuda_available
 from mmengine.registry import LOG_PROCESSORS
-
+import random
+import wandb
 
 @LOG_PROCESSORS.register_module()
 class LogProcessor:

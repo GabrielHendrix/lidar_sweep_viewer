@@ -24,10 +24,19 @@ class MAEPretrainHead(BaseModule):
     def __init__(self,
                  loss: dict,
                  norm_pix: bool = False,
-                 patch_size: int = 16) -> None:
+                 img_width=2650, 
+                 img_height=1024,
+                 patch_size: int = 16,
+                 patch_width: int = 25,
+                 patch_height: int = 16) -> None:
+                 
         super().__init__()
         self.norm_pix = norm_pix
         self.patch_size = patch_size
+        self.patch_width = patch_width
+        self.patch_height = patch_height
+        self.img_height = img_height
+        self.img_width  = img_width
         self.loss_module = MODELS.build(loss)
 
     def patchify(self, imgs: torch.Tensor) -> torch.Tensor:
@@ -39,15 +48,17 @@ class MAEPretrainHead(BaseModule):
 
         Returns:
             torch.Tensor: Patchified images. The shape is
-            :math:`(B, L, \text{patch_size}^2 \times 3)`.
+            :math:`(B, L, \text{patch_height} \times \text{patch_width} \times 3)`.
         """
-        p = self.patch_size
-        assert imgs.shape[2] == imgs.shape[3] and imgs.shape[2] % p == 0
+        ph = self.patch_height
+        pw = self.patch_width
+        assert imgs.shape[2] % ph == 0 and imgs.shape[3] % pw == 0
 
-        h = w = imgs.shape[2] // p
-        x = imgs.reshape(shape=(imgs.shape[0], 3, h, p, w, p))
+        h = imgs.shape[2] // ph
+        w = imgs.shape[3] // pw
+        x = imgs.reshape(shape=(imgs.shape[0], 3, h, ph, w, pw))
         x = torch.einsum('nchpwq->nhwpqc', x)
-        x = x.reshape(shape=(imgs.shape[0], h * w, p**2 * 3))
+        x = x.reshape(shape=(imgs.shape[0], h * w, ph * pw * 3))
         return x
 
     def unpatchify(self, x: torch.Tensor) -> torch.Tensor:
@@ -55,20 +66,21 @@ class MAEPretrainHead(BaseModule):
 
         Args:
             x (torch.Tensor): The shape is
-                :math:`(B, L, \text{patch_size}^2 \times 3)`.
+                :math:`(B, L, \text{patch_height} \times \text{patch_width} \times 3)`.
 
         Returns:
             torch.Tensor: The shape is :math:`(B, 3, H, W)`.
         """
-        p = self.patch_size
-        h = w = int(x.shape[1]**.5)
+        ph = self.patch_height
+        pw = self.patch_width
+        h = self.img_height // ph
+        w = self.img_width // pw
         assert h * w == x.shape[1]
 
-        x = x.reshape(shape=(x.shape[0], h, w, p, p, 3))
+        x = x.reshape(shape=(x.shape[0], h, w, ph, pw, 3))
         x = torch.einsum('nhwpqc->nchpwq', x)
-        imgs = x.reshape(shape=(x.shape[0], 3, h * p, h * p))
+        imgs = x.reshape(shape=(x.shape[0], 3, h * ph, w * pw))
         return imgs
-
     def construct_target(self, target: torch.Tensor) -> torch.Tensor:
         """Construct the reconstruction target.
 

@@ -57,6 +57,10 @@ from .loops import EpochBasedTrainLoop, IterBasedTrainLoop, TestLoop, ValLoop
 from .priority import Priority, get_priority
 from .utils import set_random_seed
 
+import random
+import wandb
+
+
 ConfigType = Union[Dict, Config, ConfigDict]
 ParamSchedulerType = Union[List[_ParamScheduler], Dict[str,
                                                        List[_ParamScheduler]]]
@@ -434,6 +438,19 @@ class Runner:
         self.logger.info(f'Hooks will be executed in the following '
                          f'order:\n{self.get_hooks_info()}')
 
+        wandb_logger = wandb.init(
+            # Set the wandb entity where your project will be logged (generally your team name).
+            entity="hendrix_lcad",
+            # Set the wandb project where this run will be logged.
+            project="my-master-project",
+            # Track hyperparameters and run metadata.
+            config={
+                "learning_rate": 0.02,
+                "architecture": "CNN",
+                "dataset": "CIFAR-100",
+                "epochs": 10,
+            },
+        )
         # dump `cfg` to `work_dir`
         self.dump_config()
 

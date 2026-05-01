@@ -19,8 +19,10 @@ from .base import BaseSelfSupervisor
 class MAEViT(VisionTransformer):
     def __init__(self,
                  arch: Union[str, dict] = 'b',
-                 img_size: int = 224,
-                 patch_size: int = 16,
+                 img_width: int = 2650,
+                 img_height: int = 1024,
+                 patch_width: int = 25,
+                 patch_height: int = 16,
                  out_indices: Union[Sequence, int] = -1,
                  drop_rate: float = 0,
                  drop_path_rate: float = 0,
@@ -34,8 +36,8 @@ class MAEViT(VisionTransformer):
                  init_cfg: Optional[Union[List[dict], dict]] = None) -> None:
         super().__init__(
             arch=arch,
-            img_size=img_size,
-            patch_size=patch_size,
+            img_size=(img_height, img_width),
+            patch_size=(patch_height, patch_width),
             out_indices=out_indices,
             drop_rate=drop_rate,
             drop_path_rate=drop_path_rate,
@@ -48,6 +50,7 @@ class MAEViT(VisionTransformer):
             layer_cfgs=layer_cfgs,
             init_cfg=init_cfg)
 
+
         # position embedding is not learnable during pretraining
         self.pos_embed.requires_grad = False
 
@@ -57,8 +60,11 @@ class MAEViT(VisionTransformer):
     def init_weights(self) -> None:
         """Initialize position embedding, patch embedding and cls token."""
         super().init_weights()
+        # Calcula o grid real de patches
+        patches_h = self.patch_embed.init_out_size[0]
+        patches_w = self.patch_embed.init_out_size[1]
         pos_embed = build_2d_sincos_position_embedding(
-            int(self.num_patches**.5),
+            (patches_h, patches_w),
             self.pos_embed.shape[-1],
             cls_token=True)
         self.pos_embed.data.copy_(pos_embed.float())

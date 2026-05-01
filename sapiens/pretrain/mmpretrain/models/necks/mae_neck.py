@@ -52,7 +52,11 @@ class MAEPretrainDecoder(BaseModule):
 
     def __init__(self,
                  num_patches: int = 196,
-                 patch_size: int = 16,
+                #  patch_size: int = 16,
+                 img_width=2650, 
+                 img_height=1024,
+                 patch_width=25,
+                 patch_height=16,
                  in_chans: int = 3,
                  embed_dim: int = 1024,
                  decoder_embed_dim: int = 512,
@@ -63,16 +67,14 @@ class MAEPretrainDecoder(BaseModule):
                  predict_feature_dim: Optional[float] = None,
                  init_cfg: Optional[Union[List[dict], dict]] = None) -> None:
         super().__init__(init_cfg=init_cfg)
-        self.num_patches = num_patches
+        self.patches_h = img_height // patch_height
+        self.patches_w = img_width // patch_width
+        self.num_patches = self.patches_h * self.patches_w
 
-        # used to convert the dim of features from encoder to the dim
-        # compatible with that of decoder
         self.decoder_embed = nn.Linear(embed_dim, decoder_embed_dim, bias=True)
+        self.mask_token = nn.Parameter(torch.zeros(1, 1, decoder_embed_dim))
 
-        self.mask_token = nn.Parameter(torch.zeros(1, 1, decoder_embed_dim)) ## learnable mask token. initialized as normal_
-
-        # create new position embedding, different from that in encoder
-        # and is not learnable
+        # Positional embedding 2D
         self.decoder_pos_embed = nn.Parameter(
             torch.zeros(1, self.num_patches + 1, decoder_embed_dim),
             requires_grad=False)
@@ -92,20 +94,18 @@ class MAEPretrainDecoder(BaseModule):
 
         # Used to map features to pixels
         if predict_feature_dim is None:
-            predict_feature_dim = patch_size**2 * in_chans
+            predict_feature_dim = patch_height * patch_width * in_chans
         self.decoder_pred = nn.Linear(
             decoder_embed_dim, predict_feature_dim, bias=True)
 
     def init_weights(self) -> None:
         """Initialize position embedding and mask token of MAE decoder."""
         super().init_weights()
-
         decoder_pos_embed = build_2d_sincos_position_embedding(
-            int(self.num_patches**.5),
+            (self.patches_h, self.patches_w),
             self.decoder_pos_embed.shape[-1],
             cls_token=True)
         self.decoder_pos_embed.data.copy_(decoder_pos_embed.float())
-
         torch.nn.init.normal_(self.mask_token, std=.02)
 
     @property
@@ -132,19 +132,28 @@ class MAEPretrainDecoder(BaseModule):
         """
         # embed tokens
 
-        x = self.decoder_embed(x) ## B x (L * (1-mask_ratio) + 1) x C -> B x (L * (1-mask_ratio) + 1) x Decoder_dim
+        x = self.decoder_embed(x)
 
         # append mask tokens to sequence
-        mask_tokens = self.mask_token.repeat(x.shape[0], ids_restore.shape[1] + 1 - x.shape[1], 1) ## B x (L * mask_ratio) x Decoder_dim
-        x_ = torch.cat([x[:, 1:, :], mask_tokens], dim=1) ## B x L x Decoder_dim
+        mask_tokens = self.mask_token.repeat(x.shape[0], ids_restore.shape[1] + 1 - x.shape[1], 1)
+        x_ = torch.cat([x[:, 1:, :], mask_tokens], dim=1)
         x_ = torch.gather(
             x_,
             dim=1,
             index=ids_restore.unsqueeze(-1).repeat(1, 1, x.shape[2]))
-        x = torch.cat([x[:, :1, :], x_], dim=1) ## B x (L + 1) x Decoder_dim
+        x = torch.cat([x[:, :1, :], x_], dim=1)
 
         # add pos embed
-        x = x + self.decoder_pos_embed
+        if x.shape[1] != self.decoder_pos_embed.shape[1]:
+            pos_embed = torch.nn.functional.interpolate(
+                self.decoder_pos_embed.transpose(1, 2),
+                size=x.shape[1],
+                mode='linear',
+                align_corners=False
+            ).transpose(1, 2)
+            x = x + pos_embed
+        else:
+            x = x + self.decoder_pos_embed
 
         # apply Transformer blocks
         for blk in self.decoder_blocks:

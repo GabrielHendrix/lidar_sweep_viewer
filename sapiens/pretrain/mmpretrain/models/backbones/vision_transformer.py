@@ -347,6 +347,17 @@ class VisionTransformer(BaseBackbone):
         self.embed_dims = self.arch_settings['embed_dims']
         self.num_layers = self.arch_settings['num_layers']
         self.img_size = to_2tuple(img_size)
+        self.patch_size = to_2tuple(patch_size)
+
+        _patch_cfg = dict(
+            in_channels=in_channels,
+            input_size=self.img_size,
+            embed_dims=self.embed_dims,
+            conv_type='Conv2d',
+            kernel_size=self.patch_size,
+            stride=self.patch_size,
+            bias=not pre_norm,
+        )
 
         # Set patch embedding
         _patch_cfg = dict(
