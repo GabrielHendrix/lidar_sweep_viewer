@@ -11,11 +11,11 @@ This module captures the lidar messages to create a runtime visualization of the
 
 ## Como usar
 
-### 🔧 Preparando o dataset:
+### 🔧 Preparando o dataset (Waymo Perception):
 
 <!-- Primeiro baixe um dos exemplos através dos links abaixo e salve no diretório /dados/hendrix/ (crie na sua máquina de ainda não existir). -->
-
-Primeiro baixe um dos exemplos através desses links ([waymo_10](https://drive.google.com/file/d/1r6ZK1GBGBJ_HPMohtXgqvP4HfKaG7LyH/view?usp=sharing) | [waymo_100](https://drive.google.com/file/d/14tn2D7QxNo3MLwXRuiXZNeUWUHws2UDV/view?usp=sharing) | [waymo_1000](https://drive.google.com/file/d/1z4b0QzQHsxyFNNvcqHzuCptoDm_DUdRO/view?usp=sharing)) e salve no diretório de preferência em sua máquina.
+Primeiro baixe um dos exemplos através desses links ([waymo_10](https://drive.google.com/file/d/1Qo3w1imuZEB2kjS16UnPEKE_aw6W4-Bh/view?usp=drive_link) | [waymo_100](https://drive.google.com/file/d/171be1ZCZCGv5gDiOqYPFIeCWRrz671Ru/view?usp=drive_link) | [waymo_1000](https://drive.google.com/file/d/1SmPEpDLBPDeVcK2ZmhBczOE045_K2IOe/view?usp=drive_link)) e salve no diretório de preferência em sua máquina.
+<!--Primeiro baixe um dos exemplos através desses links ([waymo_10](https://drive.google.com/file/d/1r6ZK1GBGBJ_HPMohtXgqvP4HfKaG7LyH/view?usp=sharing) | [waymo_100](https://drive.google.com/file/d/14tn2D7QxNo3MLwXRuiXZNeUWUHws2UDV/view?usp=sharing) | [waymo_1000](https://drive.google.com/file/d/1z4b0QzQHsxyFNNvcqHzuCptoDm_DUdRO/view?usp=sharing)) e salve no diretório de preferência em sua máquina. -->
 
 Agora descompacte o arquivo baixado no mesmo diretório:
 
